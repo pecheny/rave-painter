@@ -73,10 +73,12 @@ package {
 		private var pathHeads:Vector.<DirectedVertex> = new Vector.<DirectedVertex>();
 
 		private function findPath():void {
-
 			var colorBoundsRect:Rectangle = bitmap.bitmapData.getColorBoundsRect(0xFFFFFFFF, 0xFF000000);
 			trace("rect", colorBoundsRect);
-			if (colorBoundsRect.width == 0 && colorBoundsRect.height == 0) return;
+			if (colorBoundsRect.width == 0 && colorBoundsRect.height == 0) {
+				drawPathes();
+				return;
+			}
 			var y:Number = colorBoundsRect.top;
 			var x:Number = colorBoundsRect.left;
 			while (isPixelBlack(x, y) == 0) {
@@ -90,39 +92,49 @@ package {
 			step(x, y - 1, DIR_RIGHT);
 		}
 
+		private function drawPathes():void {
+			for each (var head:DirectedVertex in pathHeads) {
+				var x:int = head.x + 1;
+				var y:int = head.y;
+				canvas.graphics.moveTo(x, y);
+				canvas.graphics.beginFill(0xffffff*Math.random());
+				var vertex:DirectedVertex = head.next;
+				while (vertex.next != null) {
+//					x += vertex.x;
+//					y += vertex.y;
+					canvas.graphics.lineTo(vertex.x+1, vertex.y);
+					vertex = vertex.next;
+				}
+				canvas.graphics.endFill();
+			}
+		}
+
 		private function step(x0:int, y0:int, direction:int):void {
 			counter++;
 			var ABCD:int = getABCD(x0, y0, direction);
 			var turn:int = getTurn(ABCD);
 			var outDir:int = local2globalDirection(turn, direction);
 			lastVertex = lastVertex.followTo(outDir);
-			currentPoint.x += lastVertex.x;
-			currentPoint.y += lastVertex.y;
-			if ((currentPoint.x == firstVertex.x && currentPoint.y == firstVertex.y)) {
+//			currentPoint.x += lastVertex.x;
+//			currentPoint.y += lastVertex.y;
+			if ((lastVertex.x == firstVertex.x && lastVertex.y == firstVertex.y)) {
 				finishPath();
 				return;
 			}
-			step(x0 + lastVertex.x, y0 + lastVertex.y, lastVertex.getDirection());
+			step(lastVertex.x, lastVertex.y-1, lastVertex.getDirection());
 		}
 
 		private function finishPath():void {
 			var x:int = firstVertex.x + 1;
 			var y:int = firstVertex.y;
 			trace("bgn", x, y);
-			canvas.graphics.beginBitmapFill( bitmap.bitmapData);
-
-
-//			sourceBD.copyPixels(bitmap.bitmapData)
-
-
-			var vertex:DirectedVertex = lastVertex;
+			canvas.graphics.moveTo(x, y);
+			canvas.graphics.beginBitmapFill(bitmap.bitmapData);
+			var vertex:DirectedVertex = firstVertex.next;
 			while (vertex.next != null) {
-				x -= vertex.x;
-				y -= vertex.y;
-				//				trace(x, y);
-				//				color += 50;
-				//				canvas.graphics.lineStyle(.1, color);
-				canvas.graphics.lineTo(x , y);
+//				x += vertex.x;
+//				y += vertex.y;
+				canvas.graphics.lineTo(vertex.x+1, vertex.y);
 				vertex = vertex.next;
 			}
 			canvas.graphics.endFill();
@@ -135,6 +147,22 @@ package {
 			pathHeads.push(firstVertex);
 			setTimeout(findPath, 150);
 		}
+
+		//		private function findFurtherVertexOnSegment(vertex:DirectedVertex):DirectedVertex {
+		//			var currentFurther:DirectedVertex = vertex.next;
+		//			var furtherNotFound:Boolean;
+		//
+		//
+		//			while (furtherNotFound) {
+		//
+		//				// check directions
+		//				// check xprod for constr 1
+		//				// check xprod for constr 2
+		//				// update constrs
+		//				// go to next vertex
+		//			}
+		//			return null;
+		//		}
 
 		public function getABCD(x0:int, y0:int, direction:int):int {
 			switch (direction) {
@@ -267,6 +295,7 @@ class DirectedVertex {
 	public var x:int;
 	public var y:int;
 	public var next:DirectedVertex;
+	private var _direction:int;
 
 	public function DirectedVertex(x:int, y:int):void {
 		this.x = x;
@@ -288,34 +317,39 @@ class DirectedVertex {
 	}
 
 	public function toRight():DirectedVertex {
-		var directedVertex:DirectedVertex = new DirectedVertex(1, 0);
-		directedVertex.next = this;
+		var directedVertex:DirectedVertex = new DirectedVertex(x + 1, y);
+		directedVertex._direction = RasterPainter.DIR_RIGHT;
+		next = directedVertex;
 		return directedVertex;
 	}
 
 	public function toLeft():DirectedVertex {
-		var directedVertex:DirectedVertex = new DirectedVertex(-1, 0);
-		directedVertex.next = this;
+		var directedVertex:DirectedVertex = new DirectedVertex(x - 1, y);
+		directedVertex._direction = RasterPainter.DIR_LEFT;
+		next = directedVertex;
 		return directedVertex;
 	}
 
 	public function toTop():DirectedVertex {
-		var directedVertex:DirectedVertex = new DirectedVertex(0, -1);
-		directedVertex.next = this;
+		var directedVertex:DirectedVertex = new DirectedVertex(x, y - 1);
+		directedVertex._direction = RasterPainter.DIR_TOP;
+		next = directedVertex;
 		return directedVertex;
 	}
 
 	public function toBottom():DirectedVertex {
-		var directedVertex:DirectedVertex = new DirectedVertex(0, 1);
-		directedVertex.next = this;
+		var directedVertex:DirectedVertex = new DirectedVertex(x, y + 1);
+		directedVertex._direction = RasterPainter.DIR_DOWN;
+		next = directedVertex;
 		return directedVertex;
 	}
 
 	public function getDirection():int {
-		if (x == 1 && y == 0) return RasterPainter.DIR_RIGHT;
-		if (x == -1 && y == 0) return RasterPainter.DIR_LEFT;
-		if (x == 0 && y == -1) return RasterPainter.DIR_TOP;
-		if (x == 0 && y == 1) return RasterPainter.DIR_DOWN;
-		return NaN;
+		return _direction;
+//		if (x == 1 && y == 0) return RasterPainter.DIR_RIGHT;
+//		if (x == -1 && y == 0) return RasterPainter.DIR_LEFT;
+//		if (x == 0 && y == -1) return RasterPainter.DIR_TOP;
+//		if (x == 0 && y == 1) return RasterPainter.DIR_DOWN;
+//		return NaN;
 	}
 }
