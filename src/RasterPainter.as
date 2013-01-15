@@ -100,12 +100,23 @@ package {
 				canvas.graphics.beginFill(0xffffff*Math.random());
 				var vertex:DirectedVertex = head.next;
 				while (vertex.next != null) {
-//					x += vertex.x;
-//					y += vertex.y;
-					canvas.graphics.lineTo(vertex.x+1, vertex.y);
+					//					x += vertex.x;
+					//					y += vertex.y;
+					canvas.graphics.lineTo(vertex.x + 1, vertex.y);
 					vertex = vertex.next;
 				}
 				canvas.graphics.endFill();
+			}
+			canvas.graphics.lineStyle(1, 0x909090);
+			canvas.graphics.moveTo(pathHeads[0].x, pathHeads[0].y);
+			drawStrightSegment(pathHeads[0].next);
+		}
+
+		private function drawStrightSegment(nextFurther:DirectedVertex):void {
+			var further:DirectedVertex = findFurtherVertexOnSegment(nextFurther);
+			if (further) {
+				canvas.graphics.lineTo(nextFurther.x, nextFurther.y);
+				setTimeout(drawStrightSegment, 100, further);
 			}
 		}
 
@@ -115,13 +126,13 @@ package {
 			var turn:int = getTurn(ABCD);
 			var outDir:int = local2globalDirection(turn, direction);
 			lastVertex = lastVertex.followTo(outDir);
-//			currentPoint.x += lastVertex.x;
-//			currentPoint.y += lastVertex.y;
+			//			currentPoint.x += lastVertex.x;
+			//			currentPoint.y += lastVertex.y;
 			if ((lastVertex.x == firstVertex.x && lastVertex.y == firstVertex.y)) {
 				finishPath();
 				return;
 			}
-			step(lastVertex.x, lastVertex.y-1, lastVertex.getDirection());
+			step(lastVertex.x, lastVertex.y - 1, lastVertex.getDirection());
 		}
 
 		private function finishPath():void {
@@ -132,9 +143,9 @@ package {
 			canvas.graphics.beginBitmapFill(bitmap.bitmapData);
 			var vertex:DirectedVertex = firstVertex.next;
 			while (vertex.next != null) {
-//				x += vertex.x;
-//				y += vertex.y;
-				canvas.graphics.lineTo(vertex.x+1, vertex.y);
+				//				x += vertex.x;
+				//				y += vertex.y;
+				canvas.graphics.lineTo(vertex.x + 1, vertex.y);
 				vertex = vertex.next;
 			}
 			canvas.graphics.endFill();
@@ -148,21 +159,51 @@ package {
 			setTimeout(findPath, 150);
 		}
 
-		//		private function findFurtherVertexOnSegment(vertex:DirectedVertex):DirectedVertex {
-		//			var currentFurther:DirectedVertex = vertex.next;
-		//			var furtherNotFound:Boolean;
-		//
-		//
-		//			while (furtherNotFound) {
-		//
-		//				// check directions
-		//				// check xprod for constr 1
-		//				// check xprod for constr 2
-		//				// update constrs
-		//				// go to next vertex
-		//			}
-		//			return null;
-		//		}
+		private function findFurtherVertexOnSegment(vertex:DirectedVertex):DirectedVertex {
+			var currentFurther:DirectedVertex = vertex.next;
+			var constr1:Point = new Point();
+			var constr2:Point = new Point();
+			var off:Point = new Point();
+
+			while (currentFurther.next) {
+
+				// check directions
+
+				// check xprod for constr 1
+				// check xprod for constr 2
+
+				if (compareDirections(constr1, currentFurther) > 0 || compareDirections(constr2, currentFurther) < 0) {
+					break;
+				}
+
+
+				// update constrs
+
+				if (!(Math.abs(currentFurther.x) <= 1 && Math.abs(currentFurther.y) <= 1)) {
+					off.x = currentFurther.x + ((-currentFurther.y >= 0 && (-currentFurther.y > 0 || currentFurther.x < 0)) ? 1 : -1);
+					off.y = currentFurther.y + ((-currentFurther.x <= 0 && (-currentFurther.x < 0 || currentFurther.y < 0)) ? 1 : -1);
+					if (compareDirections(constr1, off) <= 0) {
+						constr1.x = off.x;
+						constr1.y = off.y;
+					}
+
+					off.x = currentFurther.x + ((-currentFurther.y <= 0 && (-currentFurther.y < 0 || currentFurther.x < 0)) ? 1 : -1);
+					off.y = currentFurther.y + ((-currentFurther.x >= 0 && (-currentFurther.x > 0 || currentFurther.y < 0)) ? 1 : -1);
+					if (compareDirections(constr2, off) >= 0) {
+						constr2.x = off.x;
+						constr2.y = off.y;
+					}
+				}
+
+				// go to next vertex
+				currentFurther = currentFurther.next
+			}
+			return currentFurther;
+		}
+
+		private function compareDirections(a:Object, b:Object):Number {
+			return a.x*b.y - a.y*b.x;
+		}
 
 		public function getABCD(x0:int, y0:int, direction:int):int {
 			switch (direction) {
@@ -346,10 +387,10 @@ class DirectedVertex {
 
 	public function getDirection():int {
 		return _direction;
-//		if (x == 1 && y == 0) return RasterPainter.DIR_RIGHT;
-//		if (x == -1 && y == 0) return RasterPainter.DIR_LEFT;
-//		if (x == 0 && y == -1) return RasterPainter.DIR_TOP;
-//		if (x == 0 && y == 1) return RasterPainter.DIR_DOWN;
-//		return NaN;
+		//		if (x == 1 && y == 0) return RasterPainter.DIR_RIGHT;
+		//		if (x == -1 && y == 0) return RasterPainter.DIR_LEFT;
+		//		if (x == 0 && y == -1) return RasterPainter.DIR_TOP;
+		//		if (x == 0 && y == 1) return RasterPainter.DIR_DOWN;
+		//		return NaN;
 	}
 }
