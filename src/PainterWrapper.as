@@ -1,31 +1,35 @@
-/**
- * Created with IntelliJ IDEA.
- * User: shoo
- * Date: 1/2/13
- * Time: 6:52 PM
- * To change this template use File | Settings | File Templates.
- */
 package {
-	import flash.display.Sprite;
-	import flash.events.MouseEvent;
-[SWF(width="800", height="600", frameRate="220")]
-	public class PainterWrapper extends Sprite{
-		private var painter:RasterPainter;
-		public function PainterWrapper() {
-			painter = new RasterPainter(200,150);
-			painter.scaleX = painter.scaleY = 4;
-			addChild(painter);
-			stage.addEventListener(MouseEvent.MOUSE_DOWN, mouseDownHandler);
-			stage.addEventListener(MouseEvent.MOUSE_UP, mouseUpHandler);
+    import flash.display.Sprite;
+    import flash.display.StageScaleMode;
+    import flash.text.TextField;
 
-		}
+    [SWF(width="800", height="600", frameRate="60", backgroundColor="0")]
+    public class PainterWrapper extends Sprite {
+        private var painter:RavePainter;
+        private var renderer:PathRenderer;
 
-		private function mouseDownHandler(event:MouseEvent):void {
-			painter.startDraw();
-		}
+        public function PainterWrapper() {
+            stage.scaleMode = StageScaleMode.NO_SCALE;
 
-		private function mouseUpHandler(event:MouseEvent):void {
-			painter.stopDraw();
-		}
-	}
+            painter = new RavePainter(200, 150);
+            painter.scaleX = painter.scaleY = 4;
+            painter.addEventListener(RecognizeCompleteEvent.RECOGNIZE_COMPLETE, recognizeCompleteHandler);
+            addChild(painter);
+
+            var label = new TextField();
+            label.text = "Draw something...";
+            label.mouseEnabled = false;
+            addChild(label);
+
+            renderer = new PathRenderer();
+            renderer.scaleX = renderer.scaleY = 4;
+            renderer.mouseChildren = false;
+            renderer.mouseEnabled = false;
+            addChild(renderer);
+        }
+
+        private function recognizeCompleteHandler(event:RecognizeCompleteEvent):void {
+            renderer.renderPath(event.data);
+        }
+    }
 }
